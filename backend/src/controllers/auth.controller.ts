@@ -1,11 +1,15 @@
-import { Request, Response, NextFunction } from 'express';
-import { AuthService } from '../services/auth.service';
-import { z } from 'zod';
+import { Request, Response, NextFunction } from "express";
+import { AuthService } from "../services/auth.service";
+import { z } from "zod";
 
 const authService = new AuthService();
 
 const registerSchema = z.object({
-  username: z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/, 'Apenas letras, números e _'),
+  username: z
+    .string()
+    .min(3)
+    .max(20)
+    .regex(/^[a-zA-Z0-9_]+$/, "Apenas letras, números e _"),
   email: z.string().email(),
   password: z.string().min(6),
 });
@@ -16,10 +20,18 @@ const loginSchema = z.object({
 });
 
 export class AuthController {
-  async register(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async register(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const data = registerSchema.parse(req.body);
-      const result = await authService.register(data.username, data.email, data.password);
+      const result = await authService.register(
+        data.username,
+        data.email,
+        data.password,
+      );
       res.status(201).json(result);
     } catch (error) {
       next(error);
@@ -36,7 +48,11 @@ export class AuthController {
     }
   }
 
-  async loginGuest(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async loginGuest(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const result = await authService.loginAsGuest();
       res.json(result);
@@ -45,11 +61,15 @@ export class AuthController {
     }
   }
 
-  async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async refreshToken(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const { refreshToken } = req.body;
       if (!refreshToken) {
-        res.status(400).json({ error: 'Refresh token não fornecido' });
+        res.status(400).json({ error: "Refresh token não fornecido" });
         return;
       }
       const result = await authService.refreshToken(refreshToken);
