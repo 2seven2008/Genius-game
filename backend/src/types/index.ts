@@ -32,7 +32,7 @@ export interface CreateRoomDto {
   maxPlayers?: number;
 }
 
-export type GameColor = 'red' | 'green' | 'blue' | 'yellow';
+export type GameColor = "red" | "green" | "blue" | "yellow";
 
 export interface GameState {
   sequence: GameColor[];
@@ -40,7 +40,7 @@ export interface GameState {
   isShowingSequence: boolean;
   playerTurn: boolean;
   players: RoomPlayer[];
-  status: 'waiting' | 'showing' | 'input' | 'finished';
+  status: "waiting" | "showing" | "input" | "finished";
 }
 
 export interface RoomPlayer {
