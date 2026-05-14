@@ -5,5 +5,6 @@ export interface AuthRequest extends Request {
     userId: string;
     email?: string;
     username?: string;
+    isGuest?: boolean;
   };
 }
