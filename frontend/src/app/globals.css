@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-orbitron: 'Orbitron', monospace;
+  --font-exo: 'Exo 2', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #0A0A0F;
+  color: white;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0A0A0F; }
+::-webkit-scrollbar-thumb { background: #2A2A3E; border-radius: 2px; }
+
+/* Selection */
+::selection { background: rgba(192, 38, 211, 0.3); }
+
+/* Font display utility */
+.font-display { font-family: var(--font-orbitron), monospace; }
+.font-body    { font-family: var(--font-exo), sans-serif; }
+
+/* Scanlines overlay (subtle retro effect) */
+.scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+}
+
+@layer utilities {
+  .text-shadow-neon {
+    text-shadow: 0 0 20px currentColor;
+  }
+}

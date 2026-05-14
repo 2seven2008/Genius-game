@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(cuid())
+  username   String   @unique
+  email      String?  @unique
+  password   String?
+  avatar     String?
+  isGuest    Boolean  @default(false)
+  wins       Int      @default(0)
+  matches    Int      @default(0)
+  highScore  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  rankings   Ranking[]
+  hostedRooms Room[]   @relation("RoomHost")
+  matchesPlayed MatchPlayer[]
+  wonMatches Match[]   @relation("MatchWinner")
+
+  @@map("users")
+}
+
+model Room {
+  id         String     @id @default(cuid())
+  code       String     @unique
+  isPublic   Boolean    @default(true)
+  maxPlayers Int        @default(2)
+  status     RoomStatus @default(WAITING)
+  hostId     String
+  host       User       @relation("RoomHost", fields: [hostId], references: [id], onDelete: Cascade)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  // Relations
+  matches    Match[]
+
+  @@map("rooms")
+}
+
+model Match {
+  id        String      @id @default(cuid())
+  mode      GameMode    @default(SINGLEPLAYER)
+  status    MatchStatus @default(IN_PROGRESS)
+  roomId    String?
+  room      Room?       @relation(fields: [roomId], references: [id])
+  winnerId  String?
+  winner    User?       @relation("MatchWinner", fields: [winnerId], references: [id])
+  createdAt DateTime    @default(now())
+  endedAt   DateTime?
+
+  // Relations
+  players   MatchPlayer[]
+
+  @@map("matches")
+}
+
+model MatchPlayer {
+  id       String @id @default(cuid())
+  matchId  String
+  match    Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score    Int    @default(0)
+  maxLevel Int    @default(0)
+  position Int?   // final position (1st, 2nd, etc.)
+
+  @@unique([matchId, userId])
+  @@map("match_players")
+}
+
+model Ranking {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score     Int      @default(0)
+  streak    Int      @default(0)
+  category  String   @default("score") // score, wins, streak
+  createdAt DateTime @default(now())
+
+  @@map("rankings")
+}
+
+enum RoomStatus {
+  WAITING
+  IN_PROGRESS
+  FINISHED
+}
+
+enum GameMode {
+  SINGLEPLAYER
+  MULTIPLAYER
+}
+
+enum MatchStatus {
+  IN_PROGRESS
+  FINISHED
+  CANCELLED
+}
