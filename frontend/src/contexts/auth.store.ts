@@ -108,7 +108,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "genius-auth",
-      partialState: (state: AuthState) => ({
+      partialize: (state: AuthState) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),

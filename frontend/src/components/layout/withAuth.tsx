@@ -1,7 +1,7 @@
-'use client';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/contexts/auth.store';
+"use client";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/contexts/auth.store";
 
 export function withAuth<P extends object>(Component: React.ComponentType<P>) {
   return function ProtectedPage(props: P) {
@@ -10,7 +10,7 @@ export function withAuth<P extends object>(Component: React.ComponentType<P>) {
 
     useEffect(() => {
       if (!isLoading && !isAuthenticated) {
-        router.replace('/');
+        router.replace("/");
       }
     }, [isAuthenticated, isLoading, router]);
 
