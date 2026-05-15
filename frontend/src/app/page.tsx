@@ -1,16 +1,24 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { IntroScreen } from '@/components/layout/IntroScreen';
 import { LandingScreen } from '@/features/auth/LandingScreen';
 import { useAuthStore } from '@/contexts/auth.store';
 
 export default function RootPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  const [introDone, setIntroDone] = useState(false);
 
-  useEffect(() => {
+  const handleIntroComplete = () => {
+    setIntroDone(true);
     if (isAuthenticated) router.replace('/home');
-  }, [isAuthenticated, router]);
+  };
 
-  return <LandingScreen />;
+  return (
+    <>
+      {!introDone && <IntroScreen onComplete={handleIntroComplete} />}
+      {introDone && !isAuthenticated && <LandingScreen />}
+    </>
+  );
 }

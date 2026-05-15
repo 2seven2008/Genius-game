@@ -1,119 +1,167 @@
-'use client';
-import React from 'react';
-import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
-import { User, Trophy, Gamepad2, Settings, LogOut, Swords } from 'lucide-react';
-import { GeniusLogo } from '@/components/ui/GeniusLogo';
-import { NeonButton } from '@/components/ui/NeonButton';
-import { Card } from '@/components/ui/Card';
-import { useAuthStore } from '@/contexts/auth.store';
-import { disconnectSocket } from '@/services/socket';
+"use client";
+import React from "react";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import {
+  Gamepad2,
+  Swords,
+  Trophy,
+  Settings,
+  LogOut,
+  ChevronRight,
+} from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
+import { Avatar } from "@/components/ui/Avatar";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { useAuthStore } from "@/contexts/auth.store";
+import { useT } from "@/contexts/i18n";
+import { disconnectSocket } from "@/services/socket";
 
-const container = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
 };
 const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
+  hidden: { opacity: 0, y: 14 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { ease: [0.16, 1, 0.3, 1], duration: 0.4 },
+  },
 };
 
 export function HomeScreen() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const t = useT();
 
   const handleLogout = () => {
     disconnectSocket();
     logout();
-    router.push('/');
+    router.push("/");
   };
 
   const menuItems = [
-    { label: 'SINGLEPLAYER', variant: 'purple' as const, icon: Gamepad2, href: '/singleplayer' },
-    { label: 'MULTIPLAYER',  variant: 'blue' as const,   icon: Swords,   href: '/multiplayer' },
-    { label: 'RANKINGS',     variant: 'orange' as const, icon: Trophy,   href: '/ranking' },
-    { label: 'CONFIGURAÇÃO', variant: 'gray' as const,   icon: Settings, href: '/settings' },
+    {
+      label: t("singleplayer"),
+      icon: Gamepad2,
+      href: "/singleplayer",
+      accent: "text-violet-400",
+    },
+    {
+      label: t("multiplayer"),
+      icon: Swords,
+      href: "/multiplayer",
+      accent: "text-blue-400",
+    },
+    {
+      label: t("ranking"),
+      icon: Trophy,
+      href: "/ranking",
+      accent: "text-amber-400",
+    },
+    {
+      label: t("settings"),
+      icon: Settings,
+      href: "/settings",
+      accent: "text-text-muted",
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-dark-base flex flex-col items-center justify-start pt-10 pb-8 px-5 max-w-sm mx-auto">
-      <motion.div
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="mb-8"
-      >
-        <GeniusLogo />
-      </motion.div>
-
-      {/* User card */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}
-        className="w-full mb-8"
-      >
-        <Card glowColor="purple" className="flex items-center gap-4 p-4">
-          <div className="w-14 h-14 rounded-full bg-dark-muted border-2 border-neon-purple/40 flex items-center justify-center flex-shrink-0">
-            <User className="w-7 h-7 text-neon-purple" />
-          </div>
-          <div>
-            <p className="font-display font-bold text-white text-lg leading-tight">
-              {user?.username ?? 'Usuário'}
-              {user?.isGuest && (
-                <span className="ml-2 text-xs font-body text-zinc-500 font-normal">(Visitante)</span>
-              )}
-            </p>
-            <p className="text-zinc-400 text-xs font-body mt-0.5">
-              {user?.wins ?? 0} Vitórias &nbsp;·&nbsp; {user?.matches ?? 0} Partidas
-            </p>
-            <p className="text-zinc-400 text-xs font-body">
-              Melhor Score:{' '}
-              <span className="text-neon-yellow font-bold">{user?.highScore ?? 0}</span>
-            </p>
-          </div>
-        </Card>
-      </motion.div>
-
-      {/* Menu */}
-      <div className="w-full mb-2">
-        <p className="text-center text-zinc-500 text-xs font-display tracking-widest mb-4">
-          Modos de Jogo
-        </p>
+    <div className="page">
+      <div className="page-inner pt-12 pb-8">
         <motion.div
-          variants={container}
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mb-8"
+        >
+          <Logo size="md" />
+        </motion.div>
+
+        {/* User card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1, duration: 0.4 }}
+          className="mb-6"
+        >
+          <Card variant="default" padding="md">
+            <div className="flex items-center gap-3">
+              <Avatar name={user?.username ?? "?"} size="lg" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-text-primary truncate">
+                    {user?.username ?? "Usuário"}
+                  </p>
+                  {user?.isGuest && (
+                    <span className="text-xs text-text-muted bg-surface-3 px-2 py-0.5 rounded-full shrink-0">
+                      {t("guest")}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-xs text-text-muted">
+                    {user?.wins ?? 0} {t("wins")}
+                  </span>
+                  <span className="text-xs text-text-muted/40">·</span>
+                  <span className="text-xs text-text-muted">
+                    {user?.matches ?? 0} {t("matches")}
+                  </span>
+                  <span className="text-xs text-text-muted/40">·</span>
+                  <span className="text-xs text-warning font-medium">
+                    {user?.highScore ?? 0} pts
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Menu */}
+        <motion.div
+          variants={stagger}
           initial="hidden"
           animate="show"
-          className="flex flex-col gap-3"
+          className="flex flex-col gap-2 mb-4"
         >
-          {menuItems.map(({ label, variant, icon: Icon, href }) => (
-            <motion.div key={label} variants={item}>
-              <NeonButton
-                variant={variant}
-                fullWidth
-                size="lg"
-                onClick={() => router.push(href)}
-                className="flex items-center justify-center gap-2"
-              >
-                <Icon className="w-5 h-5" />
+          {menuItems.map(({ label, icon: Icon, href, accent }) => (
+            <motion.button
+              key={href}
+              variants={item}
+              onClick={() => router.push(href)}
+              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl bg-surface-2 border-default hover:bg-surface-3 transition-colors group"
+            >
+              <div className="w-9 h-9 rounded-lg bg-surface-3 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Icon className={`w-4.5 h-4.5 ${accent}`} />
+              </div>
+              <span className="flex-1 text-left font-medium text-text-primary text-sm">
                 {label}
-              </NeonButton>
-            </motion.div>
+              </span>
+              <ChevronRight className="w-4 h-4 text-text-muted/50 group-hover:text-text-muted transition-colors" />
+            </motion.button>
           ))}
         </motion.div>
-      </div>
 
-      {/* Logout */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="w-full mt-4"
-      >
-        <NeonButton variant="red" fullWidth onClick={handleLogout}>
-          <LogOut className="w-4 h-4 inline mr-2" />
-          Sair da Conta
-        </NeonButton>
-      </motion.div>
+        {/* Logout */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.45 }}
+        >
+          <Button
+            variant="ghost"
+            fullWidth
+            size="sm"
+            onClick={handleLogout}
+            icon={<LogOut className="w-3.5 h-3.5" />}
+          >
+            {t("logout")}
+          </Button>
+        </motion.div>
+      </div>
     </div>
   );
 }

@@ -1,27 +1,25 @@
 "use client";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/contexts/auth.store";
+import Cookies from "js-cookie";
 
 export function withAuth<P extends object>(Component: React.ComponentType<P>) {
-  return function ProtectedPage(props: P) {
+  return function AuthGuard(props: P) {
     const router = useRouter();
-    const { isAuthenticated, isLoading } = useAuthStore();
+    const { isAuthenticated, logout } = useAuthStore();
 
     useEffect(() => {
-      if (!isLoading && !isAuthenticated) {
+      const token = Cookies.get("accessToken");
+      if (!token && isAuthenticated) {
+        logout();
         router.replace("/");
+        return;
       }
-    }, [isAuthenticated, isLoading, router]);
+      if (!isAuthenticated) router.replace("/");
+    }, [isAuthenticated, logout, router]);
 
-    if (!isAuthenticated) {
-      return (
-        <div className="min-h-screen bg-dark-base flex items-center justify-center">
-          <div className="w-10 h-10 border-2 border-neon-purple border-t-transparent rounded-full animate-spin" />
-        </div>
-      );
-    }
-
+    if (!isAuthenticated) return null;
     return <Component {...props} />;
   };
 }

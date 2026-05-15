@@ -5,26 +5,26 @@ import { cn } from '@/utils/cn';
 interface CardProps {
   children: React.ReactNode;
   className?: string;
-  glowColor?: 'purple' | 'blue' | 'yellow' | 'red' | 'none';
+  variant?: 'default' | 'raised' | 'flat' | 'accent';
+  padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
-const GLOW: Record<string, string> = {
-  purple: 'border-purple-500/40 shadow-[0_0_20px_rgba(192,38,211,0.15)]',
-  blue:   'border-sky-500/40 shadow-[0_0_20px_rgba(56,189,248,0.15)]',
-  yellow: 'border-amber-500/40 shadow-[0_0_20px_rgba(234,179,8,0.15)]',
-  red:    'border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]',
-  none:   'border-dark-border',
+const VARIANTS: Record<string, string> = {
+  default: 'bg-surface-2 border-default',
+  raised:  'bg-surface-2 border-default shadow-md',
+  flat:    'bg-surface-3',
+  accent:  'bg-accent/8 border border-accent/20',
+};
+const PADDINGS: Record<string, string> = {
+  none: '',
+  sm:   'p-3',
+  md:   'p-4',
+  lg:   'p-5',
 };
 
-export function Card({ children, className, glowColor = 'none' }: CardProps) {
+export function Card({ children, className, variant = 'default', padding = 'md' }: CardProps) {
   return (
-    <div
-      className={cn(
-        'bg-dark-card border rounded-2xl p-4',
-        GLOW[glowColor],
-        className
-      )}
-    >
+    <div className={cn('rounded-2xl border', VARIANTS[variant], PADDINGS[padding], className)}>
       {children}
     </div>
   );
