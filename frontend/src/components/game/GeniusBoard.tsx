@@ -90,7 +90,9 @@ export function GeniusBoard({
               height: `calc(50% - ${gap / 2}px)`,
             }}
             onClick={() => !disabled && onPress?.(color)}
-            whileTap={!disabled ? { scale: 0.94, brightness: 1.2 } : {}}
+            whileTap={
+              !disabled ? { scale: 0.94, filter: "brightness(1.2)" } : {}
+            }
             animate={isActive ? { scale: 1.03 } : { scale: 1 }}
             transition={{ duration: 0.08 }}
             aria-label={color}
