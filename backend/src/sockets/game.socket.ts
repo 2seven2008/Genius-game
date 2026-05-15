@@ -33,7 +33,6 @@ export function setupSocketHandlers(io: Server): void {
   io.on("connection", (socket: Socket) => {
     logger.debug(`Socket connected: ${socket.id}`);
 
-    // Emit current public rooms on connect
     emitPublicRooms(io);
 
     socket.on(
@@ -78,7 +77,13 @@ export function setupSocketHandlers(io: Server): void {
     socket.on("join_room", (data) => {
       const room = activeRooms.get(data.code);
       if (!room) {
-        socket.emit("error", { message: "Sala não encontrada" });
+        logger.warn(
+          `Room not found: ${data.code} | userId: ${data.userId} | socket: ${socket.id}`,
+        );
+        socket.emit("error", {
+          message: "Sala não encontrada ou foi encerrada",
+          code: "ROOM_NOT_FOUND",
+        });
         return;
       }
       const existingIdx = room.players.findIndex(
@@ -94,9 +99,12 @@ export function setupSocketHandlers(io: Server): void {
         return;
       }
       if (existingIdx >= 0) {
+        logger.info(
+          `Player ${data.username} reconnecting to room ${data.code}`,
+        );
         room.players[existingIdx].socketId = socket.id;
         socket.join(data.code);
-        // Reenviar o estado atual da partida para o jogador reconectado
+
         socket.emit("room_updated", { room: sanitizeRoom(room) });
         if (room.status === "showing" || room.status === "input") {
           socket.emit("match_started", {

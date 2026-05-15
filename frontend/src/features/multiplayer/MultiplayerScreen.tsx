@@ -49,20 +49,32 @@ export function MultiplayerScreen() {
   const socketRef = useRef(getSocket());
   const socket = socketRef.current;
   const showTimeouts = useRef<NodeJS.Timeout[]>([]);
+  const reconnectAttempts = useRef(0);
 
   useEffect(() => {
     socketRef.current = getSocket();
   }, []);
 
   useEffect(() => {
-    const session = roomSession.get();
-    if (session && user) {
-      const { roomCode, userId, username } = session;
-      socket.emit("join_room", { code: roomCode, userId, username });
-      setScreen("room");
-    }
-  }, []);
+    if (!user) return;
 
+    const session = roomSession.get();
+    if (session) {
+      const { roomCode, userId, username } = session;
+
+      const timeoutId = setTimeout(() => {
+        socket.emit("join_room", {
+          code: roomCode,
+          userId,
+          username,
+        });
+        setScreen("room");
+        reconnectAttempts.current++;
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [user, socket]);
   useEffect(() => {
     socket.on("public_rooms_update", (rooms: PublicRoom[]) =>
       setPublicRooms(rooms),
@@ -220,18 +232,39 @@ export function MultiplayerScreen() {
     }
     setIsCreating(true);
     try {
-      const { data } = await roomApi.create(true, 2);
-      socket.emit("create_room", {
-        code: data.code,
-        dbId: data.id,
-        userId: user.id,
-        username: user.username,
-        isPublic: data.isPublic,
-        maxPlayers: data.maxPlayers,
+      const { data } = await roomApi.create(false, 2);
+
+      // Aguardar a resposta do socket
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          socket.off("room_created", handler);
+          reject(new Error("Timeout ao criar sala"));
+        }, 5000);
+
+        const handler = ({ room: r }: { room: Room }) => {
+          clearTimeout(timeout);
+          socket.off("room_created", handler);
+          setRoom(r);
+          setScreen("room");
+          resolve();
+        };
+
+        socket.once("room_created", handler);
+
+        socket.emit("create_room", {
+          code: data.code,
+          dbId: data.id,
+          userId: user.id,
+          username: user.username,
+          isPublic: data.isPublic,
+          maxPlayers: data.maxPlayers,
+        });
+
+        roomSession.save(data.code, user.id, user.username);
       });
-      roomSession.save(data.code, user.id, user.username);
-    } catch {
+    } catch (error) {
       toast.error("Erro ao criar sala");
+      console.error(error);
     } finally {
       setIsCreating(false);
     }
