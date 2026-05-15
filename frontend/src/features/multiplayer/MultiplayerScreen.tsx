@@ -17,7 +17,6 @@ import { GameColor, PublicRoom, Room, RoomPlayer } from "@/types";
 import toast from "react-hot-toast";
 
 type Screen = "lobby" | "room" | "game" | "result";
-const COLORS: GameColor[] = ["red", "green", "blue", "yellow"];
 
 export function MultiplayerScreen() {
   const router = useRouter();
@@ -33,7 +32,6 @@ export function MultiplayerScreen() {
   const [isJoining, setIsJoining] = useState(false);
   const [showMore, setShowMore] = useState(false);
 
-  // Game state
   const [sequence, setSequence] = useState<GameColor[]>([]);
   const [activeColor, setActiveColor] = useState<GameColor | null>(null);
   const [playerInput, setPlayerInput] = useState<GameColor[]>([]);
@@ -46,47 +44,51 @@ export function MultiplayerScreen() {
   } | null>(null);
   const [showingSequence, setShowingSequence] = useState(false);
 
+  // FIX #4: socketRef fixo — evita listeners duplicados ao re-render
   const socketRef = useRef(getSocket());
   const socket = socketRef.current;
   const showTimeouts = useRef<NodeJS.Timeout[]>([]);
   const reconnectAttempts = useRef(0);
 
-  useEffect(() => {
-    socketRef.current = getSocket();
-  }, []);
-
+  // FIX #3: aguarda user disponível antes de reconectar (F5)
   useEffect(() => {
     if (!user) return;
-
     const session = roomSession.get();
     if (session) {
       const { roomCode, userId, username } = session;
-
       const timeoutId = setTimeout(() => {
-        socket.emit("join_room", {
-          code: roomCode,
-          userId,
-          username,
-        });
-        setScreen("room");
+        socket.emit("join_room", { code: roomCode, userId, username });
+        // NÃO muda tela aqui — room_updated fará isso quando chegar
         reconnectAttempts.current++;
       }, 100);
-
       return () => clearTimeout(timeoutId);
     }
   }, [user, socket]);
+
   useEffect(() => {
     socket.on("public_rooms_update", (rooms: PublicRoom[]) =>
       setPublicRooms(rooms),
     );
+
     socket.on("room_created", ({ room: r }: { room: Room }) => {
       setRoom(r);
       setScreen("room");
     });
-    socket.on("room_updated", ({ room: r }: { room: Room }) => setRoom(r));
+
+    // FIX #2: room_updated agora é responsável por mudar para tela "room"
+    // Isso resolve: guest com tela preta, host não vê o guest, reconexão pós-F5
+    socket.on("room_updated", ({ room: r }: { room: Room }) => {
+      setRoom(r);
+      setScreen((prev) => {
+        if (prev === "lobby") return "room";
+        return prev;
+      });
+    });
+
     socket.on("error", ({ message }: { message: string }) =>
       toast.error(message),
     );
+
     socket.on("host_changed", () => toast("Você é o novo host!"));
 
     socket.on(
@@ -124,6 +126,15 @@ export function MultiplayerScreen() {
       setIsMyTurn(false);
       setActiveColor(null);
     });
+
+    // FIX CRÍTICO: este listener existia no cleanup mas NUNCA era registrado!
+    // Sem ele o frontend nunca sabia de quem era a vez → jogo travado para sempre
+    socket.on(
+      "your_turn",
+      ({ playerId }: { playerId: string; sequence: GameColor[] }) => {
+        setIsMyTurn(playerId === user?.id);
+      },
+    );
 
     socket.on("player_failed", ({ userId, players }: any) => {
       if (userId === user?.id) {
@@ -187,9 +198,6 @@ export function MultiplayerScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  // MultiplayerScreen.tsx
-
-  // Adicionar roomCode como parâmetro para evitar closure stale
   function showSequenceAnimation(
     seq: GameColor[],
     roomCode: string,
@@ -215,7 +223,6 @@ export function MultiplayerScreen() {
     const done = setTimeout(
       () => {
         setShowingSequence(false);
-        // Apenas o host sinaliza que a sequência terminou
         if (isHostPlayer) {
           socket.emit("sequence_shown", { code: roomCode });
         }
@@ -233,14 +240,11 @@ export function MultiplayerScreen() {
     setIsCreating(true);
     try {
       const { data } = await roomApi.create(false, 2);
-
-      // Aguardar a resposta do socket
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
           socket.off("room_created", handler);
           reject(new Error("Timeout ao criar sala"));
         }, 5000);
-
         const handler = ({ room: r }: { room: Room }) => {
           clearTimeout(timeout);
           socket.off("room_created", handler);
@@ -248,9 +252,7 @@ export function MultiplayerScreen() {
           setScreen("room");
           resolve();
         };
-
         socket.once("room_created", handler);
-
         socket.emit("create_room", {
           code: data.code,
           dbId: data.id,
@@ -259,7 +261,6 @@ export function MultiplayerScreen() {
           isPublic: data.isPublic,
           maxPlayers: data.maxPlayers,
         });
-
         roomSession.save(data.code, user.id, user.username);
       });
     } catch (error) {
@@ -283,14 +284,15 @@ export function MultiplayerScreen() {
       }
       setIsJoining(true);
       try {
-        await roomApi.getByCode(c); // validate
+        await roomApi.getByCode(c);
+        // FIX #2: NÃO faz setScreen aqui
+        // A mudança de tela acontece no listener room_updated, que chega com dados reais
         socket.emit("join_room", {
           code: c,
           userId: user.id,
           username: user.username,
         });
         roomSession.save(c, user.id, user.username);
-        setScreen("room");
       } catch {
         toast.error("Sala não encontrada ou indisponível");
       } finally {
@@ -317,7 +319,6 @@ export function MultiplayerScreen() {
     setPlayerInput(newInput);
     setActiveColor(color);
     setTimeout(() => setActiveColor(null), 200);
-
     if (newInput.length === sequence.length) {
       socket.emit("player_input", {
         code: room.code,
@@ -331,7 +332,7 @@ export function MultiplayerScreen() {
 
   const handleLeave = () => {
     if (room) socket.emit("leave_room", { code: room.code });
-    roomSession.clear(); // ← adicionar
+    roomSession.clear();
     setRoom(null);
     setScreen("lobby");
     setSequence([]);
@@ -346,12 +347,10 @@ export function MultiplayerScreen() {
   };
 
   const isHost = room && socket.id === room.hostSocketId;
-
   const displayedRooms = showMore ? publicRooms : publicRooms.slice(0, 4);
 
   return (
     <div className="min-h-screen bg-dark-base flex flex-col items-center justify-start pt-8 pb-10 px-5 max-w-sm mx-auto">
-      {/* LOBBY */}
       <AnimatePresence mode="wait">
         {screen === "lobby" && (
           <motion.div
@@ -373,7 +372,6 @@ export function MultiplayerScreen() {
               </h1>
             </div>
 
-            {/* Create room */}
             <Card glowColor="blue" className="mb-4 p-4">
               <div className="flex items-center gap-2 mb-1">
                 <Plus className="w-5 h-5 text-neon-blue" />
@@ -394,7 +392,6 @@ export function MultiplayerScreen() {
               </NeonButton>
             </Card>
 
-            {/* Divider */}
             <div className="relative flex items-center my-4">
               <div className="flex-1 h-px bg-dark-border" />
               <span className="px-3 text-xs text-zinc-500 font-body">
@@ -403,7 +400,6 @@ export function MultiplayerScreen() {
               <div className="flex-1 h-px bg-dark-border" />
             </div>
 
-            {/* Join by code */}
             <Card className="mb-4 p-4">
               <p className="text-center font-display font-bold text-white text-sm mb-3 tracking-widest">
                 CODIGO DE SALA
@@ -426,7 +422,6 @@ export function MultiplayerScreen() {
               </NeonButton>
             </Card>
 
-            {/* Public rooms */}
             {publicRooms.length > 0 && (
               <Card>
                 <div className="flex items-center gap-2 mb-3">
@@ -475,7 +470,6 @@ export function MultiplayerScreen() {
           </motion.div>
         )}
 
-        {/* ROOM LOBBY */}
         {screen === "room" && room && (
           <motion.div
             key="room"
@@ -496,7 +490,6 @@ export function MultiplayerScreen() {
               </h1>
             </div>
 
-            {/* Room code */}
             <Card glowColor="blue" className="mb-4 p-4 text-center">
               <p className="text-zinc-400 text-xs font-body mb-1 tracking-widest uppercase">
                 Código da Sala
@@ -517,7 +510,6 @@ export function MultiplayerScreen() {
               </p>
             </Card>
 
-            {/* Players */}
             <Card className="mb-4 p-4">
               <p className="font-display font-bold text-white mb-3">
                 Jogadores ({room.players.length}/{room.maxPlayers})
@@ -577,7 +569,6 @@ export function MultiplayerScreen() {
           </motion.div>
         )}
 
-        {/* GAME */}
         {screen === "game" && room && (
           <motion.div
             key="game"
@@ -586,16 +577,11 @@ export function MultiplayerScreen() {
             exit={{ opacity: 0 }}
             className="w-full flex flex-col items-center justify-between min-h-screen pt-4 pb-8"
           >
-            {/* Players scores */}
             <div className="w-full flex justify-between mb-4">
               {room.players.map((p) => (
                 <div
                   key={p.userId}
-                  className={`flex flex-col items-center px-3 py-2 rounded-xl transition-all ${
-                    p.isAlive
-                      ? "bg-dark-card border border-dark-border"
-                      : "bg-dark-card/30 opacity-40"
-                  }`}
+                  className={`flex flex-col items-center px-3 py-2 rounded-xl transition-all ${p.isAlive ? "bg-dark-card border border-dark-border" : "bg-dark-card/30 opacity-40"}`}
                 >
                   <span
                     className={`font-display font-bold text-xs ${p.isAlive ? "text-white" : "text-zinc-600 line-through"}`}
@@ -647,7 +633,6 @@ export function MultiplayerScreen() {
           </motion.div>
         )}
 
-        {/* RESULT */}
         {screen === "result" && gameResult && (
           <motion.div
             key="result"

@@ -86,32 +86,47 @@ export function setupSocketHandlers(io: Server): void {
         });
         return;
       }
+
       const existingIdx = room.players.findIndex(
         (p) => p.userId === data.userId,
       );
 
-      if (existingIdx < 0 && room.status !== "waiting") {
-        socket.emit("error", { message: "Partida já em andamento" });
-        return;
-      }
-      if (room.players.length >= room.maxPlayers) {
-        socket.emit("error", { message: "Sala cheia" });
-        return;
-      }
+      // FIX: reconexão tem prioridade — verificar ANTES de checar sala cheia ou status
       if (existingIdx >= 0) {
         logger.info(
           `Player ${data.username} reconnecting to room ${data.code}`,
         );
-        room.players[existingIdx].socketId = socket.id;
-        socket.join(data.code);
 
+        const oldSocketId = room.players[existingIdx].socketId;
+        room.players[existingIdx].socketId = socket.id;
+
+        // Se quem reconectou era o host, restaurar hostSocketId
+        if (oldSocketId === room.hostSocketId) {
+          room.hostSocketId = socket.id;
+        }
+
+        socket.join(data.code);
+        // Notifica o reconectado com estado atual
         socket.emit("room_updated", { room: sanitizeRoom(room) });
+        // Notifica os outros (ex: host ver que o guest voltou)
+        socket.to(data.code).emit("room_updated", { room: sanitizeRoom(room) });
+
         if (room.status === "showing" || room.status === "input") {
           socket.emit("match_started", {
             sequence: room.sequence,
             level: room.currentLevel,
           });
         }
+        return;
+      }
+
+      // Novo jogador (não é reconexão)
+      if (room.status !== "waiting") {
+        socket.emit("error", { message: "Partida já em andamento" });
+        return;
+      }
+      if (room.players.length >= room.maxPlayers) {
+        socket.emit("error", { message: "Sala cheia" });
         return;
       }
 
