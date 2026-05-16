@@ -76,7 +76,7 @@ export function HomeScreen() {
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="mb-8"
+          className="mb-8 flex justify-center"
         >
           <Logo size="md" />
         </motion.div>

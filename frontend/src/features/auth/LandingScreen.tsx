@@ -98,7 +98,7 @@ export function LandingScreen() {
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-10"
+          className="mb-10 flex justify-center"
         >
           <Logo size="lg" />
         </motion.div>
