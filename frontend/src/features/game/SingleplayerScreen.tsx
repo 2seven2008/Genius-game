@@ -61,7 +61,7 @@ export function SingleplayerScreen() {
                 </p>
                 {score > 0 && score >= highScore && (
                   <p className="text-warning text-sm font-medium mt-1 animate-pulse-soft">
-                    🏆 Novo recorde!
+                    🏆 NOVO RECORDE!
                   </p>
                 )}
                 <p className="text-text-muted text-xs mt-1">
@@ -77,7 +77,8 @@ export function SingleplayerScreen() {
               >
                 <p className="text-text-muted text-sm">Pronto para jogar?</p>
                 <p className="text-text-muted/50 text-xs mt-1">
-                  Melhor: <span className="text-warning">{highScore}</span>
+                  MELHOR PONTUAÇÃO:{" "}
+                  <span className="text-warning">{highScore}</span>
                 </p>
               </motion.div>
             )}
@@ -112,7 +113,7 @@ export function SingleplayerScreen() {
           {!isPlaying ? (
             <>
               <Button variant="primary" fullWidth size="lg" onClick={startGame}>
-                {phase === "gameover" ? t("playAgain") : "Iniciar Jogo"}
+                {phase === "gameover" ? t("playAgain") : "Começar"}
               </Button>
               <Button
                 variant="ghost"
