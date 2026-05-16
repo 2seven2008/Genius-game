@@ -22,7 +22,7 @@ const pageVariants = {
 
 export function LandingScreen() {
   const router = useRouter();
-  const { login, register, loginAsGuest, isLoading } = useAuthStore();
+  const { login, register, loginAsGuest, isLoading, user } = useAuthStore();
   const t = useT();
   const [view, setView] = useState<View>("home");
   const [direction, setDirection] = useState(1);
@@ -67,12 +67,21 @@ export function LandingScreen() {
     }
   };
 
-  const handleJoinRoom = () => {
+  const handleJoinRoom = async () => {
     if (!roomCode.trim()) {
       toast.error(t("enterCode"));
       return;
     }
-    router.push(`/multiplayer?join=${roomCode.trim().toUpperCase()}`);
+    const code = roomCode.trim().toUpperCase();
+    if (!user) {
+      try {
+        await loginAsGuest();
+      } catch {
+        toast.error(t("guestError"));
+        return;
+      }
+    }
+    router.push(`/multiplayer?join=${code}`);
   };
 
   const features = [
