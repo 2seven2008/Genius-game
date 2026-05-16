@@ -92,7 +92,7 @@ export function LandingScreen() {
 
   return (
     <div className="page">
-      <div className="page-inner pt-14 pb-8">
+      <div className="page-inner justify-center py-12">
         {/* Logo */}
         <motion.div
           initial={{ opacity: 0, y: -16 }}

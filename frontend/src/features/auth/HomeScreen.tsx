@@ -71,7 +71,7 @@ export function HomeScreen() {
 
   return (
     <div className="page">
-      <div className="page-inner pt-12 pb-8">
+      <div className="page-inner justify-center py-12">
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
