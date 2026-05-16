@@ -362,7 +362,7 @@ export function MultiplayerScreen() {
   // ── SCREENS ────────────────────────────────────────────────────
   return (
     <div className="page">
-      <div className="page-inner">
+      <div className="page-inner page-inner--spaced">
         <AnimatePresence mode="wait" custom={direction}>
           {/* LOBBY */}
           {screen === "lobby" && (
