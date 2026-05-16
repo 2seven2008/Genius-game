@@ -47,7 +47,7 @@ export function RankingScreen() {
 
   return (
     <div className="page">
-      <div className="page-inner pt-12 pb-8">
+      <div className="page-inner pt-14 pb-12">
         <div className="flex items-center gap-3 mb-6">
           <button
             onClick={() => router.push("/home")}

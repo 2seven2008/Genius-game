@@ -67,7 +67,7 @@ export function SettingsScreen() {
 
   return (
     <div className="page">
-      <div className="page-inner pt-12 pb-8">
+      <div className="page-inner pt-14 pb-12">
         <div className="flex items-center gap-3 mb-8">
           <button
             onClick={() => router.push("/home")}
@@ -163,7 +163,7 @@ export function SettingsScreen() {
                   {t("appVersion")}
                 </span>
                 <span className="text-sm text-text-muted font-mono">
-                  v1.5.0
+                  v1.0.0
                 </span>
               </div>
               <button
