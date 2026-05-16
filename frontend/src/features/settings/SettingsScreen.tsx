@@ -67,7 +67,7 @@ export function SettingsScreen() {
 
   return (
     <div className="page">
-      <div className="page-inner pt-14 pb-12">
+      <div className="page-inner">
         <div className="flex items-center gap-3 mb-8">
           <button
             onClick={() => router.push("/home")}
