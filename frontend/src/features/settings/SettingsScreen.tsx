@@ -163,7 +163,7 @@ export function SettingsScreen() {
                   {t("appVersion")}
                 </span>
                 <span className="text-sm text-text-muted font-mono">
-                  v1.0.0
+                  v1.5.0
                 </span>
               </div>
               <button

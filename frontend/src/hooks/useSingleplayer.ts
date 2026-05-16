@@ -35,7 +35,12 @@ export function useSingleplayer() {
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const showSequenceTimeout = useRef<NodeJS.Timeout | null>(null);
+  const sequenceTimeouts = useRef<NodeJS.Timeout[]>([]);
+
+  const clearAllSequenceTimeouts = useCallback(() => {
+    sequenceTimeouts.current.forEach((t) => clearTimeout(t));
+    sequenceTimeouts.current = [];
+  }, []);
 
   // Show sequence animation
   const showSequence = useCallback(
@@ -45,36 +50,42 @@ export function useSingleplayer() {
 
       sequence.forEach((color, i) => {
         // Illuminate
-        showSequenceTimeout.current = setTimeout(
-          () => {
-            setState((s) => ({ ...s, activeColor: color }));
-            playColor(color);
-          },
-          i * (interval + 200),
+        sequenceTimeouts.current.push(
+          setTimeout(
+            () => {
+              setState((s) => ({ ...s, activeColor: color }));
+              playColor(color);
+            },
+            i * (interval + 200),
+          ),
         );
 
         // Turn off
-        showSequenceTimeout.current = setTimeout(
-          () => {
-            setState((s) => ({ ...s, activeColor: null }));
-          },
-          i * (interval + 200) + interval,
+        sequenceTimeouts.current.push(
+          setTimeout(
+            () => {
+              setState((s) => ({ ...s, activeColor: null }));
+            },
+            i * (interval + 200) + interval,
+          ),
         );
       });
 
       // After all shown, allow input
-      showSequenceTimeout.current = setTimeout(
-        () => {
-          setState((s) => ({ ...s, phase: "input", activeColor: null }));
-        },
-        sequence.length * (interval + 200) + 300,
+      sequenceTimeouts.current.push(
+        setTimeout(
+          () => {
+            setState((s) => ({ ...s, phase: "input", activeColor: null }));
+          },
+          sequence.length * (interval + 200) + 300,
+        ),
       );
     },
     [playColor],
   );
 
   const startGame = useCallback(() => {
-    if (showSequenceTimeout.current) clearTimeout(showSequenceTimeout.current);
+    clearAllSequenceTimeouts();
     const first = randomColor();
     const newSeq = [first];
     setState({
@@ -87,7 +98,7 @@ export function useSingleplayer() {
       highScore: user?.highScore ?? 0,
     });
     setTimeout(() => showSequence(newSeq, 1), 600);
-  }, [showSequence, user]);
+  }, [showSequence, user, clearAllSequenceTimeouts]);
 
   const handleColorPress = useCallback(
     (color: GameColor) => {
@@ -148,7 +159,7 @@ export function useSingleplayer() {
 
   const quit = useCallback(async () => {
     soundService.stopAllSounds();
-    if (showSequenceTimeout.current) clearTimeout(showSequenceTimeout.current);
+    clearAllSequenceTimeouts();
     const { score, level } = stateRef.current;
     if (user && !user.isGuest && score > 0) {
       try {
@@ -161,10 +172,9 @@ export function useSingleplayer() {
 
   useEffect(() => {
     return () => {
-      if (showSequenceTimeout.current)
-        clearTimeout(showSequenceTimeout.current);
+      clearAllSequenceTimeouts();
     };
-  }, []);
+  }, [clearAllSequenceTimeouts]);
 
   return { state, startGame, handleColorPress, quit };
 }
